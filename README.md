@@ -1,1 +1,2 @@
-Team Members
+Team Members:
+-MAGORO THABO
