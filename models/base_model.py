@@ -1,5 +1,6 @@
 #!/usr/bin/python3
-"""This module definesclass for all models in our project"""
+"""This module defines class for all models in our project"""
+"""Remove this comment"""
 import uuid
 from datetime import datetime
 
