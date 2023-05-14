@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-'''Command Line Interpreter'''
+'''Command line Interpreter'''
 import cmd
 import json
 import re
