@@ -31,6 +31,7 @@ class HBNBCommand(cmd.Cmd):
         Function: Creates an instance of the class
         '''
         if line != "" or line is not None:
+        
             if line not in storage.classes():
                 print("** class doesn't exist **")
             else:
@@ -38,13 +39,11 @@ class HBNBCommand(cmd.Cmd):
                 obj_intance = storage.classes()[line]()
                 obj_intance.save()
                 print(obj_intance.id)
-            else:
+        else:
                 print("** class name missing **")
 
     def do_show(self, line):
-        '''Usage: 1. show <class name> <id> | 2. <class name>.show(<id>)
-        Function: Shows the instance details of the class
-        '''
+        """'''
         # check if class name and instance id was provided
         if line == "" or line is None:
             print("** class name missing **")
@@ -67,11 +66,9 @@ class HBNBCommand(cmd.Cmd):
                         print(instance_dict)
             else:
                 print("** class doesn't exist **")
-
+      """
     def do_destroy(self, line):
-        '''Usage: 1. destroy <class name> <id> | 2. <class name>.delete(<id>)
-        Function: Deletes the instance  of the class
-        '''
+        """
         # check if class name and instance id was provided
         if line == "" or line is None:
             print("** class name missing **")
@@ -96,7 +93,7 @@ class HBNBCommand(cmd.Cmd):
                         return
                     else:
                         print("** class doesn't exist **")
-
+       """
     def do_all(self, line):
         '''Usage: 1. all | 2. all <class name> | 3. <class name>.all()
         Function: Prints the string representation of all instances
