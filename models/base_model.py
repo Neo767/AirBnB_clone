@@ -1,8 +1,8 @@
 #!/usr/bin/python3
-"""This module defines class for all models in our project"""
-"""Remove this comment"""
 import uuid
 from datetime import datetime
+"""This module defines class for all models in our project"""
+"""Remove this comment"""
 
 
 class BaseModel:
@@ -43,4 +43,3 @@ class BaseModel:
         dictionary['created_at'] = self.created_at.isoformat()
         dictionary['updated_at'] = self.updated_at.isoformat()
         return dictionary
-    
