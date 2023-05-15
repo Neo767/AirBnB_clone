@@ -1,103 +1,90 @@
 #!/usr/bin/python3
-""" """
-from models.base_model import BaseModel
-import unittest
-import datetime
-from uuid import UUID
+''' 
+module for base_model tests 
+'''
+
+from unittest import TestCase
 import json
+import re
+from uuid import UUID, uuid4
+from datetime import datetime
+from time import sleep
 import os
+from models.base_model import BaseModel
 
+class TestBaseModel(TestCase):
+    ''' tests BaseModel class '''
+    def test_0(self):
+        ''' task 0 tests '''
+        obj = BaseModel()
 
-class test_basemodel(unittest.TestCase):
-    """ """
+        # id format and uniqueness
+        self.assertTrue(type(getattr(obj, 'id', None) is str) and
+                        UUID(obj.id))
+        self.assertNotEqual(BaseModel().id, obj.id)
+        self.assertNotEqual(BaseModel().id, BaseModel().id)
+        self.assertNotEqual(BaseModel().id, BaseModel().id)
 
-    def __init__(self, *args, **kwargs):
-        """ """
-        super().__init__(*args, **kwargs)
-        self.name = 'BaseModel'
-        self.value = BaseModel
+        # created_at and updated_at types
+        self.assertTrue(type(obj.created_at) is datetime)
+        self.assertTrue(type(obj.updated_at) is datetime)
 
-    def setUp(self):
-        """ """
-        pass
+        # string representation
+        self.assertEqual(str(obj), '[{}] ({}) {}'.format(
+            'BaseModel', obj.id, obj.__dict__))
 
-    def tearDown(self):
-        try:
-            os.remove('file.json')
-        except FileNotFoundError:
-            pass
+        # time updates
+        old_ctm = obj.created_at
+        old_utm = obj.updated_at
+        obj.save()
+        sleep(0.01)
+        self.assertEqual(old_ctm, obj.created_at)
+        self.assertNotEqual(old_utm, obj.updated_at)
 
-    def test_default(self):
-        """ """
-        i = self.value()
-        self.assertEqual(type(i), self.value)
+        self.assertEqual(obj.to_dict(),
+                         {'__class__': 'BaseModel', 'id': obj.id,
+                          'created_at': obj.created_at.isoformat(),
+                          'updated_at': obj.updated_at.isoformat()})
 
-    def test_kwargs(self):
-        """ """
-        i = self.value()
-        copy = i.to_dict()
-        new = BaseModel(**copy)
-        self.assertFalse(new is i)
+    def test_4(self):
+        ''' task 4 tests '''
+        # args ignorance
+        obj = BaseModel(1, 2, 3, 'kk')
+        self.assertTrue(type(getattr(obj, 'id', None) is str) and
+                        UUID(obj.id))
 
-    def test_kwargs_int(self):
-        """ """
-        i = self.value()
-        copy = i.to_dict()
-        copy.update({1: 2})
-        with self.assertRaises(TypeError):
-            new = BaseModel(**copy)
+        now = datetime.utcnow()
+        obj_dict = {'id': str(uuid4()), 'created_at': now.isoformat(),
+                    'updated_at': now.isoformat(), '__class__': 'BaseModel'}
+        
+        # kwargs parsing
+        obj = BaseModel(**obj_dict)
+        self.assertEqual(obj.id, obj_dict['id'])
+        # datetime parsing
+        self.assertEqual(obj.created_at, now)
+        self.assertEqual(obj.updated_at, now)
+        # __class__ should not be added as an attribute
+        self.assertFalse('__class__' in obj.__dict__)
+        
+        # same objects creation
+        self.assertEqual(obj.to_dict(), BaseModel(**obj_dict).to_dict())
+        self.assertEqual(str(obj), str(BaseModel(**obj_dict)))
 
-    def test_save(self):
-        """ Testing save """
-        i = self.value()
-        i.save()
-        key = self.name + "." + i.id
-        with open('file.json', 'r') as f:
-            j = json.load(f)
-            self.assertEqual(j[key], i.to_dict())
+        # no __class__ dependency
+        del obj_dict['__class__']
+        BaseModel(**obj_dict)  # no execption raised
 
-    def test_str(self):
-        """ """
-        i = self.value()
-        self.assertEqual(str(i), '[{}] ({}) {}'.format(self.name, i.id,
-                         i.__dict__))
+        # normal creation in kwargs absence
+        obj = BaseModel()
+        self.assertTrue(type(getattr(obj, 'id', None) is str) and
+                        UUID(obj.id))
+        self.assertNotEqual(BaseModel().id, obj.id)
+        self.assertNotEqual(BaseModel().id, BaseModel().id)
+        self.assertNotEqual(BaseModel().id, BaseModel().id)
 
-    def test_todict(self):
-        """ """
-        i = self.value()
-        n = i.to_dict()
-        self.assertEqual(i.to_dict(), n)
-
-    def test_kwargs_none(self):
-        """ """
-        n = {None: None}
-        with self.assertRaises(TypeError):
-            new = self.value(**n)
-
-    def test_kwargs_one(self):
-        """ """
-        n = {'Name': 'test'}
-        with self.assertRaises(KeyError):
-            new = self.value(**n)
-
-    def test_id(self):
-        """ """
-        new = self.value()
-        self.assertEqual(type(new.id), str)
-
-    def test_created_at(self):
-        """ """
-        new = self.value()
-        self.assertEqual(type(new.created_at), datetime.datetime)
-
-    def test_updated_at(self):
-        """ """
-        new = self.value()
-        self.assertEqual(type(new.updated_at), datetime.datetime)
-        n = new.to_dict()
-        new = BaseModel(**n)
-        self.assertFalse(new.created_at == new.updated_at)
-
-    if __name__ == "__main__":
-
-        unittest.main()
+        # time updates
+        old_ctm = obj.created_at
+        old_utm = obj.updated_at
+        obj.save()
+        sleep(0.01)
+        self.assertEqual(old_ctm, obj.created_at)
