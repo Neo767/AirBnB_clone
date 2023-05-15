@@ -1,6 +1,5 @@
 #!/usr/bin/python3
-''' 
-module for BaseModel class 
+'''module for BaseModel class
 '''
 
 
@@ -10,8 +9,9 @@ from . import storage
 
 ISOFORMAT = "%Y-%m-%dT%H:%M:%S.%f"
 
+
 class BaseModel:
-    ''' BaseModel that defines all common attributes/methods for other classes'''
+
     def __init__(self, *args, **kwargs):
         if kwargs:
             for k in kwargs:
@@ -25,25 +25,21 @@ class BaseModel:
             self.created_at = datetime.utcnow()
             self.updated_at = self.created_at.replace()
             storage.new(self)
-        
+
     def save(self):
-        '''
-        updates the public instance attribute updated_at with the current datetime 
-        '''
-        self.updated_at=datetime.utcnow()
+
+        self.updated_at = datetime.utcnow()
         storage.save()
 
     def to_dict(self):
-        '''returns a dictionary containing all keys/values of __dict__ of the instance
-        '''
-        dct= self.__dict__.copy()
+
+        dct = self.__dict__.copy()
         dct['__class__'] = self.__class__.__name__
         dct['created_at'] = self.created_at.isoformat()
         dct['updated_at'] = self.updated_at.isoformat()
         return dct
 
     def __str__(self):
-        '''
-        returns a string representation of the model when an instance is created
-        '''
-        return '[{}] [{}] {}'.format(self.__class__.__name__, self.id, self.__dict__)
+        """Returns a string representation of the instance"""
+        cls = (str(type(self)).split('.')[-1]).split('\'')[0]
+        return '[{}] ({}) {}'.format(cls, self.id, self.__dict__)
