@@ -1,90 +1,101 @@
-#!/usr/bin/python3
-''' 
-module for base_model tests 
-'''
-
-from unittest import TestCase
+"""Testing the `base_model` module."""
 import json
-import re
-from uuid import UUID, uuid4
-from datetime import datetime
-from time import sleep
 import os
+import time
+import unittest
+import uuid
+from datetime import datetime
 from models.base_model import BaseModel
+from models.engine.file_storage import FileStorage
 
-class TestBaseModel(TestCase):
-    ''' tests BaseModel class '''
-    def test_0(self):
-        ''' task 0 tests '''
-        obj = BaseModel()
 
-        # id format and uniqueness
-        self.assertTrue(type(getattr(obj, 'id', None) is str) and
-                        UUID(obj.id))
-        self.assertNotEqual(BaseModel().id, obj.id)
-        self.assertNotEqual(BaseModel().id, BaseModel().id)
-        self.assertNotEqual(BaseModel().id, BaseModel().id)
+class TestBase(unittest.TestCase):
+    """Test cases for the `Base` class.
+    """
 
-        # created_at and updated_at types
-        self.assertTrue(type(obj.created_at) is datetime)
-        self.assertTrue(type(obj.updated_at) is datetime)
+    def setUp(self):
+        pass
 
-        # string representation
-        self.assertEqual(str(obj), '[{}] ({}) {}'.format(
-            'BaseModel', obj.id, obj.__dict__))
+    def tearDown(self) -> None:
+        """Resets FileStorage data."""
+        FileStorage._FileStorage__objects = {}
+        if os.path.exists(FileStorage._FileStorage__file_path):
+            os.remove(FileStorage._FileStorage__file_path)
 
-        # time updates
-        old_ctm = obj.created_at
-        old_utm = obj.updated_at
-        obj.save()
-        sleep(0.01)
-        self.assertEqual(old_ctm, obj.created_at)
-        self.assertNotEqual(old_utm, obj.updated_at)
+    def test_initialization_positive(self):
+        """Test passing cases `BaseModel` initialization.
+        """
+        b1 = BaseModel()
+        b2_uuid = str(uuid.uuid4())
+        b2 = BaseModel(id=b2_uuid, name="The weeknd", album="Trilogy")
+        self.assertIsInstance(b1.id, str)
+        self.assertIsInstance(b2.id, str)
+        self.assertEqual(b2_uuid, b2.id)
+        self.assertEqual(b2.album, "Trilogy")
+        self.assertEqual(b2.name, "The weeknd")
+        self.assertIsInstance(b1.created_at, datetime)
+        self.assertIsInstance(b1.created_at, datetime)
+        self.assertEqual(str(type(b1)),
+                         "<class 'models.base_model.BaseModel'>")
 
-        self.assertEqual(obj.to_dict(),
-                         {'__class__': 'BaseModel', 'id': obj.id,
-                          'created_at': obj.created_at.isoformat(),
-                          'updated_at': obj.updated_at.isoformat()})
+    def test_dict(self):
+        """Test method for dict"""
+        b1 = BaseModel()
+        b2_uuid = str(uuid.uuid4())
+        b2 = BaseModel(id=b2_uuid, name="The weeknd", album="Trilogy")
+        b1_dict = b1.to_dict()
+        self.assertIsInstance(b1_dict, dict)
+        self.assertIn('id', b1_dict.keys())
+        self.assertIn('created_at', b1_dict.keys())
+        self.assertIn('updated_at', b1_dict.keys())
+        self.assertEqual(b1_dict['__class__'], type(b1).__name__)
+        with self.assertRaises(KeyError) as e:
+            b2.to_dict()
 
-    def test_4(self):
-        ''' task 4 tests '''
-        # args ignorance
-        obj = BaseModel(1, 2, 3, 'kk')
-        self.assertTrue(type(getattr(obj, 'id', None) is str) and
-                        UUID(obj.id))
+    def test_save(self):
+        """Test method for save"""
+        b = BaseModel()
+        time.sleep(0.5)
+        date_now = datetime.now()
+        b.save()
+        diff = b.updated_at - date_now
+        self.assertTrue(abs(diff.total_seconds()) < 0.01)
 
-        now = datetime.utcnow()
-        obj_dict = {'id': str(uuid4()), 'created_at': now.isoformat(),
-                    'updated_at': now.isoformat(), '__class__': 'BaseModel'}
-        
-        # kwargs parsing
-        obj = BaseModel(**obj_dict)
-        self.assertEqual(obj.id, obj_dict['id'])
-        # datetime parsing
-        self.assertEqual(obj.created_at, now)
-        self.assertEqual(obj.updated_at, now)
-        # __class__ should not be added as an attribute
-        self.assertFalse('__class__' in obj.__dict__)
-        
-        # same objects creation
-        self.assertEqual(obj.to_dict(), BaseModel(**obj_dict).to_dict())
-        self.assertEqual(str(obj), str(BaseModel(**obj_dict)))
+    def test_save_storage(self):
+        """Tests that storage.save() is called from save()."""
+        b = BaseModel()
+        b.save()
+        key = "{}.{}".format(type(b).__name__, b.id)
+        d = {key: b.to_dict()}
+        self.assertTrue(os.path.isfile(FileStorage._FileStorage__file_path))
+        with open(FileStorage._FileStorage__file_path,
+                  "r", encoding="utf-8") as f:
+            self.assertEqual(len(f.read()), len(json.dumps(d)))
+            f.seek(0)
+            self.assertEqual(json.load(f), d)
 
-        # no __class__ dependency
-        del obj_dict['__class__']
-        BaseModel(**obj_dict)  # no execption raised
+    def test_save_no_args(self):
+        """Tests save() with no arguments."""
+        self.resetStorage()
+        with self.assertRaises(TypeError) as e:
+            BaseModel.save()
+        msg = "save() missing 1 required positional argument: 'self'"
+        self.assertEqual(str(e.exception), msg)
 
-        # normal creation in kwargs absence
-        obj = BaseModel()
-        self.assertTrue(type(getattr(obj, 'id', None) is str) and
-                        UUID(obj.id))
-        self.assertNotEqual(BaseModel().id, obj.id)
-        self.assertNotEqual(BaseModel().id, BaseModel().id)
-        self.assertNotEqual(BaseModel().id, BaseModel().id)
+    def test_save_excess_args(self):
+        """Tests save() with too many arguments."""
+        self.resetStorage()
+        with self.assertRaises(TypeError) as e:
+            BaseModel.save(self, 98)
+        msg = "save() takes 1 positional argument but 2 were given"
+        self.assertEqual(str(e.exception), msg)
 
-        # time updates
-        old_ctm = obj.created_at
-        old_utm = obj.updated_at
-        obj.save()
-        sleep(0.01)
-        self.assertEqual(old_ctm, obj.created_at)
+    def test_str(self):
+        """Test method for str representation"""
+        b1 = BaseModel()
+        string = f"[{type(b1).__name__}] ({b1.id}) {b1.__dict__}"
+        self.assertEqual(b1.__str__(), string)
+
+
+if __name__ == "__main__":
+    unittest.main()
